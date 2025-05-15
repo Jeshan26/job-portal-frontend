@@ -1,7 +1,8 @@
 <script setup>
-    import { ref, defineProps, onMounted } from 'vue';
+    import { reactive,ref, defineProps, onMounted } from 'vue';
     import JobListing from './JobListing.vue';
     import { RouterLink } from 'vue-router';
+    import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
     import axios from 'axios';
 
     
@@ -13,16 +14,25 @@
         }
     });
 
-    const jobs = ref([]);
+    // below is using ref(primitives or objects)
+    // const jobs = ref([]);
+
+    //  reactive uses ref under the hood but takes only objects
+    const state = reactive({
+        jobs: [],
+        isLoading: true,
+    })
 
 onMounted(async()=>{
     try {
-        const response = await axios.get('http://localhost:5000/jobs');
-        jobs.value = response.data;
+        const response = await axios.get('/api/jobs');
+        state.jobs = response.data;
     } catch (error) {
         console.error('Error fetching job',error);
+    } finally {
+        state.isLoading = false;
     }
-})
+});
 </script>
 
 <template>
@@ -31,8 +41,14 @@ onMounted(async()=>{
             <h2 class="text-3xl font-bold text-green-500 mb-6 text-center">
                 Browse Jobs
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <JobListing v-for="job in jobs.slice(0,limit || jobs.length)" :key="job.id" :job="job" />
+            <!-- Show Loading spinner while isLoading = true -->
+             <div v-if="state.isLoading" class="text-center text-gray-500 py-6">
+                <PulseLoader/>
+             </div>
+
+             <!-- Show Job Listing when done loading -->
+            <div v-else  class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <JobListing v-for="job in state.jobs.slice(0,limit || state.jobs.length)" :key="job.id" :job="job" />
             </div>
         </div>
     </section>
